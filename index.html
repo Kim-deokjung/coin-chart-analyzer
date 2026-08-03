@@ -55,7 +55,9 @@
   .note{color:var(--muted); font-size:12px; line-height:1.6; margin-top:6px;}
   .warn{color:var(--accent);}
   #disclaimer{margin-top:20px; padding:10px; border:1px dashed var(--border); border-radius:8px; color:var(--muted); font-size:12px; line-height:1.6;}
-  #status{padding:8px 16px; color:var(--muted); font-size:12px;}
+  #status{padding:8px 16px 4px; color:var(--muted); font-size:12px;}
+  #hint{padding:0 16px 6px; color:var(--accent); font-size:12px; line-height:1.5;}
+  #hint:empty{display:none;}
   #status.error{color:var(--up);}
   .divg{color:var(--accent); font-weight:600;}
 </style>
@@ -72,6 +74,7 @@
   <div id="priceBox"><div class="price">-</div><div class="chg">-</div></div>
 </header>
 <div id="status">데이터 불러오는 중…</div>
+<div id="hint"></div>
 <main>
   <section id="charts">
     <div id="chartMain"><div id="legend"></div></div>
@@ -111,30 +114,57 @@ const TFS = {
 
 const KST = 9 * 3600; // 차트 시간축을 한국시간으로 표시
 
-async function getJson(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`API 응답 오류 (${r.status})`);
-  return r.json();
+// 업비트는 실제 웹사이트 주소에서 오는 요청만 분당 6회로 조인다(file://·localhost는 분당 600회).
+const IS_LOCAL = location.protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// 요청을 한 줄로 세워 간격을 띄운다 — 동시 요청이 거래소 초당 한도를 넘기지 않도록
+function serialQueue(gapMs) {
+  let last = Promise.resolve();
+  return fn => {
+    const run = last.then(fn, fn);
+    last = run.then(() => sleep(gapMs), () => sleep(gapMs));
+    return run;
+  };
+}
+
+async function getJson(url, queue) {
+  const once = async () => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  };
+  let err;
+  for (let i = 0; i < 2; i++) {
+    try { return await (queue ? queue(once) : once()); }
+    catch (e) { err = e; await sleep(600); }
+  }
+  throw err;
 }
 
 /* ---------- 거래소 어댑터 ---------- */
 const EX = {
   upbit: {
     label: "업비트", quote: "KRW", btc: "KRW-BTC", btcName: "비트코인",
+    q: serialQueue(150),
     async candles(sym, tf, count = 200) {
-      const raw = await getJson(`https://api.upbit.com/v1${TFS[tf].upbit}?market=${sym}&count=${count}`);
+      const raw = await getJson(`https://api.upbit.com/v1${TFS[tf].upbit}?market=${sym}&count=${count}`, this.q);
       return raw.reverse().map(c => ({
         time: Math.floor(Date.parse(c.candle_date_time_utc + "Z") / 1000) + KST,
         open: c.opening_price, high: c.high_price, low: c.low_price,
         close: c.trade_price, volume: c.candle_acc_trade_volume,
+        prevClose: c.prev_closing_price,
       }));
     },
-    async ticker(sym) {
-      const t = (await getJson(`https://api.upbit.com/v1/ticker?markets=${sym}`))[0];
+    // 일봉 캔들에 전일 종가가 들어 있어 별도 시세 요청 없이 등락을 구한다 (요청 수 절약)
+    async ticker(sym, data) {
+      const d = data && data.day && data.day[data.day.length - 1];
+      if (d && d.prevClose) { const chg = d.close - d.prevClose; return { price: d.close, chg, rate: chg / d.prevClose * 100 }; }
+      const t = (await getJson(`https://api.upbit.com/v1/ticker?markets=${sym}`, this.q))[0];
       return { price: t.trade_price, chg: t.signed_change_price, rate: t.signed_change_rate * 100 };
     },
     async markets() {
-      const all = await getJson("https://api.upbit.com/v1/market/all?isDetails=false");
+      const all = await getJson("https://api.upbit.com/v1/market/all?isDetails=false", this.q);
       return all.filter(m => m.market.startsWith("KRW-"))
                 .map(m => ({ sym: m.market, name: m.korean_name, disp: `${m.korean_name} (${m.market})` }));
     },
@@ -149,19 +179,20 @@ const EX = {
   },
   binance: {
     label: "바이낸스", quote: "USDT", btc: "BTCUSDT", btcName: "BTC",
+    q: serialQueue(60),
     async candles(sym, tf, count = 200) {
-      const raw = await getJson(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${TFS[tf].binance}&limit=${count}`);
+      const raw = await getJson(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${TFS[tf].binance}&limit=${count}`, this.q);
       return raw.map(k => ({
         time: Math.floor(k[0] / 1000) + KST,
         open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5],
       }));
     },
-    async ticker(sym) {
-      const t = await getJson(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
+    async ticker(sym, data) {
+      const t = await getJson(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`, this.q);
       return { price: +t.lastPrice, chg: +t.priceChange, rate: +t.priceChangePercent };
     },
     async markets() {
-      const all = await getJson("https://api.binance.com/api/v3/ticker/price");
+      const all = await getJson("https://api.binance.com/api/v3/ticker/price", this.q);
       return all.filter(t => t.symbol.endsWith("USDT") && !/(UP|DOWN|BULL|BEAR)USDT$/.test(t.symbol))
                 .map(t => { const base = t.symbol.slice(0, -4); return { sym: t.symbol, name: base, disp: `${base}/USDT` }; })
                 .sort((a, b) => a.name.localeCompare(b.name));
@@ -175,7 +206,9 @@ const EX = {
   },
 };
 
-const state = { ex: "upbit", sym: "KRW-BTC", name: "비트코인", tf: "day", markets: [], timer: null, priceLines: [] };
+// 웹 주소로 열면 업비트가 분당 6회로 막히므로 바이낸스를 기본으로 둔다
+const state = { ex: IS_LOCAL ? "upbit" : "binance", sym: IS_LOCAL ? "KRW-BTC" : "BTCUSDT",
+                name: IS_LOCAL ? "비트코인" : "BTC", tf: "day", markets: [], timer: null, priceLines: [] };
 let chMain, chRsi, chMacd, sCandle, sVol, sMa20, sMa60, sMa120, sRsi, sMacdHist, sMacdLine, sMacdSig;
 
 /* ---------- 숫자 표기 ---------- */
@@ -352,14 +385,17 @@ async function load() {
   const { sym, name, tf, ex } = state;
   const adapter = EX[ex];
   $("status").className = ""; $("status").textContent = `${adapter.label} · ${name} · ${TFS[tf].label} 불러오는 중…`;
+  $("hint").textContent = (ex === "upbit" && !IS_LOCAL)
+    ? "⚠ 웹 주소에서는 업비트가 분당 6회만 허용합니다. 자주 새로고침하면 실패할 수 있어요 — 바이낸스는 제한이 없고, 파일로 내려받아 열면 업비트도 제한이 풀립니다."
+    : "";
   try {
     const need = [...new Set([tf, "week", "day", "m240"])];
     const jobs = need.map(k => adapter.candles(sym, k));
     const btcJob = sym === adapter.btc ? null : adapter.candles(adapter.btc, "day");
-    const results = await Promise.all([...jobs, btcJob, adapter.ticker(sym)].filter(Boolean));
+    const results = await Promise.all([...jobs, btcJob].filter(Boolean));
     const data = {}; need.forEach((k, i) => data[k] = results[i]);
     const btcDay = sym === adapter.btc ? data.day : results[need.length];
-    const ticker = results[results.length - 1];
+    const ticker = await adapter.ticker(sym, data);
 
     renderChart(data[tf]);
     renderTicker(ticker);
@@ -367,7 +403,9 @@ async function load() {
     $("status").textContent = `마지막 갱신 ${new Date().toLocaleTimeString("ko-KR")} · ${adapter.label} · ${name} · ${TFS[tf].label} · 캔들 ${data[tf].length}개`;
   } catch (e) {
     $("status").className = "error";
-    $("status").textContent = "오류: " + e.message + " — 인터넷 연결, 종목 존재 여부, 요청 한도를 확인하세요.";
+    $("status").textContent = (ex === "upbit" && !IS_LOCAL)
+      ? "업비트 조회 실패 — 업비트는 웹사이트에서 오는 요청을 분당 6회로 제한합니다. 바이낸스로 보시거나, 1분 뒤 새로고침하거나, 이 페이지를 파일로 내려받아 여세요."
+      : `조회 실패 (${e.message}) — 인터넷 연결, 종목 존재 여부, 요청 한도를 확인하세요.`;
   }
 }
 
@@ -375,7 +413,8 @@ function renderTicker(t) {
   const up = t.rate > 0, down = t.rate < 0;
   $("priceBox").querySelector(".price").textContent = cur(t.price);
   const chg = $("priceBox").querySelector(".chg");
-  chg.textContent = `24시간 ${up ? "▲" : down ? "▼" : "-"} ${cur(Math.abs(t.chg))} (${t.rate.toFixed(2)}%)`;
+  const base = state.ex === "upbit" ? "전일 대비" : "24시간";
+  chg.textContent = `${base} ${up ? "▲" : down ? "▼" : "-"} ${cur(Math.abs(t.chg))} (${t.rate.toFixed(2)}%)`;
   chg.className = "chg " + (up ? "up" : down ? "down" : "");
 }
 
@@ -580,13 +619,16 @@ function initUi() {
     if (e.target.checked) state.timer = setInterval(load, 60000);
     else { clearInterval(state.timer); state.timer = null; }
   });
-  $("marketInput").value = "비트코인 (KRW-BTC)";
+  $("marketInput").placeholder = state.ex === "upbit" ? "코인 검색 (이름/심볼)" : "코인 검색 (예: BTC, SOL)";
 }
 
 (async function main() {
   makeCharts();
   initUi();
   await loadMarkets();
+  const a = EX[state.ex];
+  const f = state.markets.find(m => m.sym === a.btc);
+  $("marketInput").value = f ? f.disp : a.btc;
   load();
 })();
 
