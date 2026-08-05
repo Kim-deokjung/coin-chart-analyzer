@@ -1,0 +1,44 @@
+name: 자동 스캔
+
+# 30분마다 거래소 공개 시세를 훑어 조건에 걸린 종목을 scan.json 으로 남긴다.
+# 조회 전용이며 주문 기능은 없다. GitHub의 예약 실행은 혼잡 시 몇 분 밀릴 수 있다.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:        # 저장소 Actions 탭에서 수동 실행도 가능
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 스캔 실행
+        env:
+          SCAN_TF: m60          # 기준 봉 (day / m240 / m60 / m15)
+          SCAN_TOP: "40"        # 거래대금 상위 몇 개까지 정밀 분석할지
+        run: node scan.js
+
+      - name: 결과 커밋
+        run: |
+          if git diff --quiet -- scan.json; then
+            echo "변경 없음 — 커밋 생략"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scan.json
+          git commit -m "자동 스캔 $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
