@@ -55,6 +55,27 @@
   .note{color:var(--muted); font-size:12px; line-height:1.6; margin-top:6px;}
   .warn{color:var(--accent);}
   #disclaimer{margin-top:20px; padding:10px; border:1px dashed var(--border); border-radius:8px; color:var(--muted); font-size:12px; line-height:1.6;}
+  [hidden]{display:none !important;}   /* main의 display:grid가 hidden을 덮어쓰지 않도록 */
+  #scanner{padding:14px 16px 40px; max-width:1100px;}
+  .scan-ctl{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:12px; background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:14px;}
+  .scan-ctl label{color:var(--muted); font-size:13px; display:flex; align-items:center; gap:6px;}
+  .scan-ctl select{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 8px; border-radius:6px; font-size:13px;}
+  #scanBtn{background:var(--accent); color:#111; border:none; padding:7px 18px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px;}
+  #scanBtn:disabled{opacity:.5; cursor:default;}
+  #scanProg{color:var(--muted); font-size:12px;}
+  .hit{border:1px solid var(--border); border-left:3px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:var(--panel); cursor:pointer;}
+  .hit:hover{border-color:var(--muted);}
+  .hit.bull{border-left-color:var(--up);} .hit.bear{border-left-color:var(--down);}
+  .hit-top{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:6px;}
+  .hit-name{font-size:15px; font-weight:700;}
+  .hit-score{font-size:11px; color:var(--accent); border:1px solid var(--accent); border-radius:12px; padding:1px 8px;}
+  .hit-new{font-size:10px; font-weight:700; color:#111; background:var(--good); border-radius:10px; padding:1px 7px;}
+  .hit-price{margin-left:auto; font-variant-numeric:tabular-nums;}
+  .hit-price em{font-style:normal; font-size:12px;}
+  .hit-price em.up{color:var(--up);} .hit-price em.down{color:var(--down);}
+  .hit-lv{font-size:12px; color:var(--muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border); line-height:1.6;}
+  .hit-lv b{color:var(--text);}
+  .hit-go{font-size:11px; color:var(--accent); margin-top:6px;}
   #status{padding:8px 16px 4px; color:var(--muted); font-size:12px;}
   #hint{padding:0 16px 6px; color:var(--accent); font-size:12px; line-height:1.5;}
   #hint:empty{display:none;}
@@ -65,6 +86,7 @@
 <body>
 <header>
   <h1>📈 코인 차트 분석기 <span>with 근거</span></h1>
+  <div class="tf-btns" id="modeBtns"></div>
   <div class="tf-btns" id="exBtns"></div>
   <input id="marketInput" list="marketList" placeholder="코인 검색 (이름/심볼)" autocomplete="off">
   <datalist id="marketList"></datalist>
@@ -75,7 +97,7 @@
 </header>
 <div id="status">데이터 불러오는 중…</div>
 <div id="hint"></div>
-<main>
+<main id="mainView">
   <section id="charts">
     <div id="chartMain"><div id="legend"></div></div>
     <div class="pane-label">RSI (14) — 70 이상 과열 · 30 이하 침체</div>
@@ -85,6 +107,24 @@
   </section>
   <aside id="analysis"><p class="note">분석을 준비하고 있습니다…</p></aside>
 </main>
+
+<section id="scanner" hidden>
+  <div class="scan-ctl">
+    <label>기준 봉 <select id="scanTf"></select></label>
+    <label>최소 거래대금 <select id="scanVol"></select></label>
+    <label>방향 <select id="scanDir">
+      <option value="long">상방(롱) 조건</option>
+      <option value="short">하방(숏) 조건</option>
+    </select></label>
+    <label>자동 반복 <select id="scanAuto">
+      <option value="0">끔</option><option value="300">5분마다</option>
+      <option value="900">15분마다</option><option value="1800">30분마다</option>
+    </select></label>
+    <button id="scanBtn">스캔 실행</button>
+    <span id="scanProg"></span>
+  </div>
+  <div id="scanResult"><p class="note">거래대금 상위 종목을 훑어 조건에 걸린 후보와 그 근거를 보여줍니다. 매수·매도 추천이 아닙니다.</p></div>
+</section>
 
 <script>
 /*!
@@ -595,6 +635,8 @@ async function setExchange(ex) {
   await loadMarkets();
   const f = state.markets.find(m => m.sym === a.btc);
   $("marketInput").value = f ? f.disp : a.btc;
+  lastHits = new Set();
+  if (!$("scanner").hidden) { $("scanResult").innerHTML = ""; $("scanProg").textContent = ""; setMode("scan"); }
   load();
 }
 
@@ -622,9 +664,272 @@ function initUi() {
   $("marketInput").placeholder = state.ex === "upbit" ? "코인 검색 (이름/심볼)" : "코인 검색 (예: BTC, SOL)";
 }
 
+/* ============================================================
+   스캐너 — 전 종목을 훑어 조건에 걸린 후보를 뽑는다.
+   "사라/팔라"가 아니라 "이 조건에 해당하고, 근거는 이것"까지만 낸다.
+   ============================================================ */
+
+// 1차 스크리닝: 전 종목 24시간 통계를 한두 번의 요청으로 받는다
+EX.upbit.universe = async function () {
+  const list = state.markets.length ? state.markets : await this.markets();
+  const byCode = Object.fromEntries(list.map(m => [m.sym, m.name]));
+  const out = [];
+  for (let i = 0; i < list.length; i += 100) {
+    const codes = list.slice(i, i + 100).map(m => m.sym).join(",");
+    const rows = await getJson(`https://api.upbit.com/v1/ticker?markets=${codes}`, this.q);
+    rows.forEach(t => out.push({
+      sym: t.market, name: byCode[t.market] || t.market,
+      price: t.trade_price, chgRate: t.signed_change_rate * 100,
+      quoteVol: t.acc_trade_price_24h,
+    }));
+  }
+  return out;
+};
+
+EX.binance.universe = async function () {
+  const rows = await getJson("https://api.binance.com/api/v3/ticker/24hr", this.q);
+  return rows
+    .filter(t => t.symbol.endsWith("USDT") && !/(UP|DOWN|BULL|BEAR)USDT$/.test(t.symbol))
+    .map(t => ({
+      sym: t.symbol, name: t.symbol.slice(0, -4), price: +t.lastPrice,
+      chgRate: +t.priceChangePercent, quoteVol: +t.quoteVolume,
+    }));
+};
+
+// 스테이블코인은 시세가 고정이라 추세 분석 대상이 아니다
+const STABLE = /^(USDT|USDC|USD1|USDE|USDP|USDD|USDS|DAI|TUSD|BUSD|FDUSD|PYUSD|XUSD|EUR|EURI|AEUR|GBP|JPY|TRY|BRL|AUD|테더|테더유에스디)$/;
+
+// 최소 거래대금 후보 (유동성 없는 종목은 신호가 나와도 못 빠져나온다)
+const VOL_OPTS = {
+  upbit:   [[1e9, "10억원"], [3e9, "30억원"], [1e10, "100억원"], [3e10, "300억원"]],
+  binance: [[3e6, "300만$"], [1e7, "1천만$"], [3e7, "3천만$"], [1e8, "1억$"]],
+};
+
+/* ---------- 종목별 조건 판정 ----------
+   방향(dir)이 long이면 상방 조건, short이면 하방 조건에 점수를 준다.
+   점수는 "몇 개의 조건이 동시에 성립했나"를 나타낼 뿐 수익률 예측이 아니다. */
+function scanScore(cs, dir, u) {
+  if (!cs || cs.length < 60) return null;
+  const closes = cs.map(c => c.close), vols = cs.map(c => c.volume);
+  const i = cs.length - 1, j = i - 1;            // i=진행 중인 봉, j=직전 완성봉
+  const price = closes[i];
+  const ma20 = sma(closes, 20), ma60 = sma(closes, 60);
+  const volMa = sma(vols, 20), r = rsi(closes), m = macd(closes);
+  const long = dir === "long";
+
+  // 거래량은 직전 3개 완성봉 중 최대치로 본다 — 급등은 몇 봉 전에 터졌을 수 있다
+  let volRatio = 0;
+  for (let b = 1; b <= 3; b++) {
+    const k = i - b;
+    if (k >= 0 && volMa[k]) volRatio = Math.max(volRatio, vols[k] / volMa[k]);
+  }
+  const win = cs.slice(-21, -1);                 // 직전 20봉 (진행 중인 봉 제외)
+  const hi20 = Math.max(...win.map(c => c.high));
+  const lo20 = Math.min(...win.map(c => c.low));
+  const prev = cs[j];
+  const kUp = cs[i].open + (prev.high - prev.low) * 0.5;   // 변동성 돌파 기준선
+  const kDn = cs[i].open - (prev.high - prev.low) * 0.5;
+  const chg = u ? u.chgRate : 0;
+
+  // ── 1차 트리거: 지금 실제로 뭔가 벌어지고 있는가.
+  //    하나도 없으면 이평선·RSI가 아무리 예뻐도 후보로 보지 않는다.
+  const tBreak = long ? price > hi20 : price < lo20;
+  const tVolty = long ? price > kUp : price < kDn;
+  const tVol   = volRatio >= 2;
+  const tMove  = long ? chg >= 8 : chg <= -8;
+  if (!(tBreak || tVolty || tVol || tMove)) return null;
+
+  let score = 0; const reasons = [];
+
+  if (tBreak) { score += 3; reasons.push(long ? `직전 20봉 고점 <b>${cur(hi20)}</b> 상향 돌파` : `직전 20봉 저점 <b>${cur(lo20)}</b> 하향 이탈`); }
+  if (tVolty) { score += 2; reasons.push(long ? `변동성 돌파선 <b>${cur(kUp)}</b> 상향 (시가 + 전봉 변동폭×0.5)` : `변동성 이탈선 <b>${cur(kDn)}</b> 하향`); }
+
+  if (volRatio >= 4) { score += 3; reasons.push(`거래량 폭증 <b>${volRatio.toFixed(1)}배</b> (20봉 평균 대비, 최근 3봉 최대)`); }
+  else if (volRatio >= 2) { score += 2; reasons.push(`거래량 급증 <b>${volRatio.toFixed(1)}배</b>`); }
+  else if (volRatio >= 1.3) { score += 1; reasons.push(`거래량 ${volRatio.toFixed(1)}배`); }
+  else reasons.push(`<span class="warn">거래량 ${volRatio.toFixed(1)}배 — 뒷받침이 약한 움직임</span>`);
+
+  if (tMove) { score += 1; reasons.push(`24시간 <b>${chg >= 0 ? "+" : ""}${chg.toFixed(1)}%</b> 변동`); }
+
+  if (ma20[i] != null && ma60[i] != null) {
+    if (long && price > ma20[i] && ma20[i] > ma60[i]) { score += 2; reasons.push(`정배열 (종가 > MA20 ${cur(ma20[i])} > MA60 ${cur(ma60[i])})`); }
+    if (!long && price < ma20[i] && ma20[i] < ma60[i]) { score += 2; reasons.push(`역배열 (종가 < MA20 ${cur(ma20[i])} < MA60 ${cur(ma60[i])})`); }
+  }
+
+  for (let b = 0; b < 3; b++) {
+    const a = i - b, p = a - 1;
+    if (m.line[a] == null || m.line[p] == null || m.sig[p] == null) break;
+    if (long && m.line[a] > m.sig[a] && m.line[p] <= m.sig[p]) { score += 2; reasons.push(`MACD 골든크로스 (${b === 0 ? "직전 봉" : b + "봉 전"})`); break; }
+    if (!long && m.line[a] < m.sig[a] && m.line[p] >= m.sig[p]) { score += 2; reasons.push(`MACD 데드크로스 (${b === 0 ? "직전 봉" : b + "봉 전"})`); break; }
+  }
+
+  const rv = r[i];
+  if (rv != null) {
+    if (long) {
+      if (rv >= 80) { score -= 2; reasons.push(`<span class="warn">RSI ${rv.toFixed(0)} 과열 — 이미 많이 간 자리, 추격 위험</span>`); }
+      else if (rv >= 55) { score += 1; reasons.push(`RSI ${rv.toFixed(0)} 상승 우위`); }
+    } else {
+      if (rv <= 20) { score -= 2; reasons.push(`<span class="warn">RSI ${rv.toFixed(0)} 침체 — 반등 위험</span>`); }
+      else if (rv <= 45) { score += 1; reasons.push(`RSI ${rv.toFixed(0)} 하락 우위`); }
+    }
+  }
+
+  if (score < 5) return null;   // 조건 한둘 걸친 정도는 후보로 치지 않는다
+
+  // 손절 기준과 손익비 — 진입 논리보다 먼저 나와야 하는 숫자
+  const { s1, r1 } = srLevels(cs, price);
+  const stop = long ? (s1 ? s1.price : lo20) : (r1 ? r1.price : hi20);
+  const tgt  = long ? (r1 ? r1.price : hi20) : (s1 ? s1.price : lo20);
+  const risk = Math.abs(price - stop), reward = Math.abs(tgt - price);
+  const rr = risk > 0 ? reward / risk : null;
+  if (rr == null || rr < 1) return null;   // 목표보다 손절이 먼 자리는 검토 가치가 없다
+
+  return { score, reasons, price, rsi: rv, volRatio, stop, tgt, rr };
+}
+
+/* ---------- 스캔 실행 ---------- */
+let scanning = false;
+async function runScan() {
+  if (scanning) return;
+  const ex = state.ex, adapter = EX[ex];
+  const tf = $("scanTf").value, dir = $("scanDir").value;
+  const minVol = +$("scanVol").value;
+
+  if (ex === "upbit" && !IS_LOCAL) {
+    $("scanResult").innerHTML = `<p class="note warn">웹 주소에서는 업비트가 분당 6회로 제한돼 스캔이 불가능합니다.
+      바이낸스로 바꾸시거나, 이 페이지를 파일로 내려받아 여시면 업비트도 스캔됩니다.</p>`;
+    return;
+  }
+
+  scanning = true; $("scanBtn").disabled = true;
+  $("scanResult").innerHTML = "";
+  $("scanProg").textContent = "전 종목 시세 받는 중…";
+  try {
+    const uni = (await adapter.universe())
+      .filter(u => u.quoteVol >= minVol && !STABLE.test(u.name.toUpperCase()) && !STABLE.test(u.sym.replace(/^KRW-/, "")))
+      .sort((a, b) => b.quoteVol - a.quoteVol)
+      .slice(0, 60);                       // 거래대금 상위 60개만 정밀 분석 (요청 수 관리)
+
+    const hits = [];
+    for (let n = 0; n < uni.length; n++) {
+      const u = uni[n];
+      $("scanProg").textContent = `${n + 1}/${uni.length} 분석 중 — ${u.name}`;
+      try {
+        const cs = await adapter.candles(u.sym, tf, 120);
+        const s = scanScore(cs, dir, u);
+        if (s) hits.push({ ...u, ...s });
+      } catch (e) { /* 개별 종목 실패는 건너뛴다 */ }
+    }
+    hits.sort((a, b) => b.score - a.score);
+    const fresh = markNew(hits);
+    renderScan(hits, dir, tf, uni.length, new Set(fresh.map(h => h.sym)));
+    notifyNew(fresh, dir);
+    $("scanProg").textContent = `완료 — ${uni.length}개 중 ${hits.length}개 포착 (${new Date().toLocaleTimeString("ko-KR")})`;
+  } catch (e) {
+    $("scanResult").innerHTML = `<p class="note warn">스캔 실패: ${e.message}</p>`;
+    $("scanProg").textContent = "";
+  } finally {
+    scanning = false; $("scanBtn").disabled = false;
+  }
+}
+
+function renderScan(hits, dir, tf, scanned, freshSyms = new Set()) {
+  const long = dir === "long";
+  if (!hits.length) {
+    $("scanResult").innerHTML = `<p class="note">거래대금 상위 ${scanned}개 중 조건에 걸린 종목이 없습니다.
+      조건이 안 맞는 장이라는 뜻이기도 합니다 — 억지로 자리를 만들 이유는 없습니다.</p>`;
+    return;
+  }
+  const cards = hits.map(h => `
+    <div class="hit ${long ? "bull" : "bear"}" data-sym="${h.sym}">
+      <div class="hit-top">
+        <span class="hit-name">${h.name}</span>
+        ${freshSyms.has(h.sym) ? '<span class="hit-new">NEW</span>' : ""}
+        <span class="hit-score">조건 ${h.score}점</span>
+        <span class="hit-price">${cur(h.price)} <em class="${h.chgRate >= 0 ? "up" : "down"}">${h.chgRate >= 0 ? "+" : ""}${h.chgRate.toFixed(2)}%</em></span>
+      </div>
+      <ul class="reasons">${h.reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+      <div class="hit-lv">
+        ${long ? "무효화(손절 기준)" : "무효화(되돌림 기준)"} <b>${cur(h.stop)}</b>
+        · 1차 목표 <b>${cur(h.tgt)}</b>
+        · 손익비 <b>1 : ${h.rr != null ? h.rr.toFixed(2) : "-"}</b>
+        ${h.rr != null && h.rr < 1.5 ? '<span class="warn"> — 1:1.5 미만, 자리가 좋지 않음</span>' : ""}
+      </div>
+      <div class="hit-go">차트로 보기 →</div>
+    </div>`).join("");
+
+  $("scanResult").innerHTML = `
+    <p class="note">${EX[state.ex].label} 거래대금 상위 ${scanned}개를 ${TFS[tf].label} 기준으로 훑어
+      <b>${long ? "상방" : "하방"} 조건</b>에 걸린 ${hits.length}개입니다.
+      돌파·변동성 돌파·거래량 2배·급변동 중 <b>최소 하나가 실제로 발생</b>했고, 조건 점수 5점 이상,
+      손익비 1:1 이상만 남깁니다. 점수는 동시에 성립한 조건의 수일 뿐 수익 가능성이 아닙니다.</p>
+    ${!long ? `<p class="note warn">※ 하락 구조 포착입니다. 업비트 현물과 바이낸스 현물에는 공매도가 없어 그대로 실행할 수 없고,
+      선물·마진은 레버리지가 붙어 원금 초과 손실이 가능합니다. 보유 중인 종목의 위험 점검용으로 보시는 편이 안전합니다.</p>` : ""}
+    ${cards}
+    <div id="disclaimer">스캐너는 정해진 규칙에 해당하는 종목을 나열할 뿐, 매수·매도 권유가 아닙니다.
+      조건 성립과 수익은 별개이며, 조건에 걸린 종목의 상당수는 그대로 되돌아갑니다.
+      투자 판단과 책임은 본인에게 있습니다.</div>`;
+
+  $("scanResult").querySelectorAll(".hit").forEach(el => el.addEventListener("click", () => {
+    const f = state.markets.find(m => m.sym === el.dataset.sym);
+    if (f) { state.sym = f.sym; state.name = f.name; $("marketInput").value = f.disp; setMode("chart"); setTf($("scanTf").value); }
+  }));
+}
+
+/* ---------- 자동 스캔: 켜두면 주기마다 다시 훑고, 새로 걸린 종목만 알려준다 ---------- */
+let scanTimer = null, lastHits = new Set();
+
+function markNew(hits) {
+  const now = new Set(hits.map(h => h.sym));
+  const fresh = hits.filter(h => !lastHits.has(h.sym));
+  lastHits = now;
+  return fresh;
+}
+
+function notifyNew(fresh, dir) {
+  if (!fresh.length || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const names = fresh.slice(0, 5).map(h => `${h.name}(${h.score}점)`).join(", ");
+  try {
+    new Notification(`${dir === "long" ? "상방" : "하방"} 조건 신규 포착 ${fresh.length}건`, {
+      body: `${names}${fresh.length > 5 ? " 외" : ""} — 조건 성립일 뿐 매매 신호가 아닙니다.`,
+      tag: "coin-scan",
+    });
+  } catch (e) { /* 알림 불가 환경(file:// 등)은 조용히 넘어간다 */ }
+}
+
+function setAutoScan(sec) {
+  clearInterval(scanTimer); scanTimer = null;
+  if (!sec) return;
+  if (typeof Notification !== "undefined" && Notification.permission === "default") Notification.requestPermission();
+  scanTimer = setInterval(() => { if (!scanning && !$("scanner").hidden) runScan(); }, sec * 1000);
+}
+
+/* ---------- 모드 전환 ---------- */
+function setMode(mode) {
+  const scan = mode === "scan";
+  $("mainView").hidden = scan;
+  $("scanner").hidden = !scan;
+  document.querySelectorAll("#modeBtns button").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+  if (scan) {
+    const opts = VOL_OPTS[state.ex];
+    $("scanVol").innerHTML = opts.map(([v, l], i) => `<option value="${v}"${i === 1 ? " selected" : ""}>${l} 이상</option>`).join("");
+  }
+}
+
+function initScanner() {
+  $("modeBtns").innerHTML = `<button data-mode="chart" class="active">차트</button><button data-mode="scan">스캐너</button>`;
+  $("modeBtns").addEventListener("click", e => { if (e.target.dataset.mode) setMode(e.target.dataset.mode); });
+  $("scanTf").innerHTML = Object.entries(TFS).filter(([k]) => k !== "week")
+    .map(([k, v]) => `<option value="${k}"${k === "m60" ? " selected" : ""}>${v.label}</option>`).join("");
+  $("scanBtn").addEventListener("click", runScan);
+  ["scanTf", "scanDir", "scanVol"].forEach(id => $(id).addEventListener("change", () => { lastHits = new Set(); }));
+  $("scanAuto").addEventListener("change", e => setAutoScan(+e.target.value));
+}
+
 (async function main() {
   makeCharts();
   initUi();
+  initScanner();
   await loadMarkets();
   const a = EX[state.ex];
   const f = state.markets.find(m => m.sym === a.btc);
