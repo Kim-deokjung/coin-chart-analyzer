@@ -70,8 +70,24 @@ const EX = {
   },
   binance: {
     label: "바이낸스", minVol: 1e7, fmt: fmtUSD, gap: 60,
+    // 바이낸스는 미국 IP를 차단한다(HTTP 451). GitHub 서버가 미국이면 본 API가 막히므로
+    // 공개 데이터 전용 주소로 자동 전환한다. 한 번 성공한 주소를 이후 계속 쓴다.
+    hosts: ["https://api.binance.com", "https://data-api.binance.vision"],
+    host: null,
+    async pick() {
+      if (this.host) return this.host;
+      for (const h of this.hosts) {
+        try {
+          const r = await fetch(`${h}/api/v3/ping`);
+          if (r.ok) { this.host = h; console.log(`바이낸스 접속 주소: ${h}`); return h; }
+          console.log(`  ${h} 사용 불가 (HTTP ${r.status})`);
+        } catch (e) { console.log(`  ${h} 사용 불가 (${e.message})`); }
+      }
+      throw new Error("바이낸스 접속 가능한 주소가 없습니다 (지역 차단으로 보입니다)");
+    },
     async universe() {
-      const rows = await getJson("https://api.binance.com/api/v3/ticker/24hr");
+      const h = await this.pick();
+      const rows = await getJson(`${h}/api/v3/ticker/24hr`);
       return rows
         .filter(t => t.symbol.endsWith("USDT") && !/(UP|DOWN|BULL|BEAR)USDT$/.test(t.symbol))
         .map(t => ({
@@ -79,8 +95,11 @@ const EX = {
           chgRate: +t.priceChangePercent, quoteVol: +t.quoteVolume,
         }));
     },
-    candles: sym => getJson(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${TFS[TF].binance}&limit=120`)
-      .then(raw => raw.map(k => ({ open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }))),
+    async candles(sym) {
+      const h = await this.pick();
+      const raw = await getJson(`${h}/api/v3/klines?symbol=${sym}&interval=${TFS[TF].binance}&limit=120`);
+      return raw.map(k => ({ open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
+    },
   },
 };
 
