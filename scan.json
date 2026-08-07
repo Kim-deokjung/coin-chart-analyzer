@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T21:08:36.812Z",
+  "generatedAt": "2026-08-07T22:04:20.382Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
@@ -16,11 +16,11 @@
     },
     "binance": {
       "long": {
-        "scanned": 37,
+        "scanned": 36,
         "hits": []
       },
       "short": {
-        "scanned": 37,
+        "scanned": 36,
         "hits": []
       }
     }
