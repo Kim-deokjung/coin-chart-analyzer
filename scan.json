@@ -1,42 +1,26 @@
 {
-  "generatedAt": "2026-08-07T20:05:32.913Z",
+  "generatedAt": "2026-08-07T21:08:36.812Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 35,
-        "hits": [
-          {
-            "sym": "KRW-SLX",
-            "name": "솔스티스",
-            "chgRate": 5.5,
-            "score": 5,
-            "reasons": [
-              "거래량 급증 2.1배",
-              "정배열 (종가 > MA20 109.45원 > MA60 108.35원)",
-              "RSI 70 상승 우위"
-            ],
-            "price": 115,
-            "stop": 111,
-            "tgt": 119,
-            "rr": 1
-          }
-        ]
+        "scanned": 33,
+        "hits": []
       },
       "short": {
-        "scanned": 35,
+        "scanned": 33,
         "hits": []
       }
     },
     "binance": {
       "long": {
-        "scanned": 36,
+        "scanned": 37,
         "hits": []
       },
       "short": {
-        "scanned": 36,
+        "scanned": 37,
         "hits": []
       }
     }
