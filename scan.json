@@ -1,43 +1,42 @@
 {
-  "generatedAt": "2026-08-08T06:40:41.875Z",
+  "generatedAt": "2026-08-08T07:43:31.428Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 30,
+        "scanned": 31,
         "hits": []
       },
       "short": {
-        "scanned": 30,
+        "scanned": 31,
         "hits": []
       }
     },
     "binance": {
       "long": {
-        "scanned": 33,
+        "scanned": 34,
         "hits": [
           {
-            "sym": "BNBUSDT",
-            "name": "BNB",
-            "chgRate": 1.22,
-            "score": 7,
+            "sym": "BABYUSDT",
+            "name": "BABY",
+            "chgRate": 5.32,
+            "score": 6,
             "reasons": [
-              "직전 20봉 고점 $594.40 상향 돌파",
-              "변동성 돌파선 $593.78 상향 (시가 + 전봉 변동폭×0.5)",
-              "거래량 1.3배",
-              "RSI 60 상승 우위"
+              "거래량 급증 2.2배",
+              "정배열 (종가 > MA20 $0.01164 > MA60 $0.01127)",
+              "MACD 골든크로스 (1봉 전)"
             ],
-            "price": 594.74,
-            "stop": 592.383,
-            "tgt": 604.605,
-            "rr": 4.19
+            "price": 0.01168,
+            "stop": 0.011455,
+            "tgt": 0.01197,
+            "rr": 1.29
           }
         ]
       },
       "short": {
-        "scanned": 33,
+        "scanned": 34,
         "hits": []
       }
     }
