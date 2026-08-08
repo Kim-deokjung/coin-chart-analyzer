@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T07:43:31.428Z",
+  "generatedAt": "2026-08-08T08:33:06.194Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
@@ -16,27 +16,11 @@
     },
     "binance": {
       "long": {
-        "scanned": 34,
-        "hits": [
-          {
-            "sym": "BABYUSDT",
-            "name": "BABY",
-            "chgRate": 5.32,
-            "score": 6,
-            "reasons": [
-              "거래량 급증 2.2배",
-              "정배열 (종가 > MA20 $0.01164 > MA60 $0.01127)",
-              "MACD 골든크로스 (1봉 전)"
-            ],
-            "price": 0.01168,
-            "stop": 0.011455,
-            "tgt": 0.01197,
-            "rr": 1.29
-          }
-        ]
+        "scanned": 33,
+        "hits": []
       },
       "short": {
-        "scanned": 34,
+        "scanned": 33,
         "hits": []
       }
     }
