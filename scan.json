@@ -1,26 +1,60 @@
 {
-  "generatedAt": "2026-08-12T22:33:52.165Z",
+  "generatedAt": "2026-08-12T23:34:28.102Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 36,
+        "scanned": 37,
         "hits": []
       },
       "short": {
-        "scanned": 36,
-        "hits": []
+        "scanned": 37,
+        "hits": [
+          {
+            "sym": "KRW-SHIB",
+            "name": "시바이누",
+            "chgRate": -2.05,
+            "score": 7,
+            "reasons": [
+              "거래량 급증 3.8배",
+              "역배열 (종가 < MA20 0.006296원 < MA60 0.00635원)",
+              "MACD 데드크로스 (2봉 전)",
+              "RSI 37 하락 우위"
+            ],
+            "price": 0.00621,
+            "stop": 0.00627,
+            "tgt": 0.00615,
+            "rr": 1
+          }
+        ]
       }
     },
     "binance": {
       "long": {
-        "scanned": 33,
-        "hits": []
+        "scanned": 35,
+        "hits": [
+          {
+            "sym": "SNDKBUSDT",
+            "name": "SNDKB",
+            "chgRate": 6.3,
+            "score": 5,
+            "reasons": [
+              "변동성 돌파선 $1,352 상향 (시가 + 전봉 변동폭×0.5)",
+              "!거래량 0.4배 — 뒷받침이 약한 움직임",
+              "정배열 (종가 > MA20 $1,341 > MA60 $1,285)",
+              "RSI 64 상승 우위"
+            ],
+            "price": 1358.14,
+            "stop": 1333.505,
+            "tgt": 1388.88,
+            "rr": 1.25
+          }
+        ]
       },
       "short": {
-        "scanned": 33,
+        "scanned": 35,
         "hits": []
       }
     }
