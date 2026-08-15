@@ -1,42 +1,75 @@
 {
-  "generatedAt": "2026-08-15T11:14:04.212Z",
+  "generatedAt": "2026-08-15T11:43:02.451Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 34,
+        "scanned": 33,
         "hits": []
       },
       "short": {
-        "scanned": 34,
-        "hits": []
+        "scanned": 33,
+        "hits": [
+          {
+            "sym": "KRW-PRL",
+            "name": "펄",
+            "chgRate": -5.04,
+            "score": 5,
+            "reasons": [
+              "거래량 급증 3.7배",
+              "MACD 데드크로스 (2봉 전)",
+              "RSI 43 하락 우위"
+            ],
+            "price": 471,
+            "stop": 474,
+            "tgt": 457.6666666666667,
+            "rr": 4.44
+          }
+        ]
       }
     },
     "binance": {
       "long": {
-        "scanned": 30,
+        "scanned": 31,
         "hits": [
           {
             "sym": "ALLOUSDT",
             "name": "ALLO",
-            "chgRate": -4.17,
+            "chgRate": -1.98,
             "score": 5,
             "reasons": [
               "거래량 폭증 4.7배 (20봉 평균 대비, 최근 3봉 최대)",
               "MACD 골든크로스 (2봉 전)"
             ],
-            "price": 0.2622,
+            "price": 0.2628,
             "stop": 0.2572,
             "tgt": 0.26853333333333335,
-            "rr": 1.27
+            "rr": 1.02
           }
         ]
       },
       "short": {
-        "scanned": 30,
-        "hits": []
+        "scanned": 31,
+        "hits": [
+          {
+            "sym": "ROBOUSDT",
+            "name": "ROBO",
+            "chgRate": 3.94,
+            "score": 6,
+            "reasons": [
+              "변동성 이탈선 $0.01823 하향",
+              "거래량 1.7배",
+              "MACD 데드크로스 (2봉 전)",
+              "RSI 42 하락 우위"
+            ],
+            "price": 0.0153,
+            "stop": 0.01582,
+            "tgt": 0.014546666666666666,
+            "rr": 1.45
+          }
+        ]
       }
     }
   }
