@@ -1,23 +1,57 @@
 {
-  "generatedAt": "2026-08-15T05:19:31.240Z",
+  "generatedAt": "2026-08-15T05:49:06.233Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 34,
-        "hits": []
+        "scanned": 35,
+        "hits": [
+          {
+            "sym": "KRW-WLD",
+            "name": "월드코인",
+            "chgRate": 1.45,
+            "score": 8,
+            "reasons": [
+              "변동성 돌파선 489.50원 상향 (시가 + 전봉 변동폭×0.5)",
+              "거래량 1.6배",
+              "정배열 (종가 > MA20 482.65원 > MA60 479.37원)",
+              "MACD 골든크로스 (1봉 전)",
+              "RSI 59 상승 우위"
+            ],
+            "price": 491,
+            "stop": 489.2857142857143,
+            "tgt": 500,
+            "rr": 5.25
+          }
+        ]
       },
       "short": {
-        "scanned": 34,
+        "scanned": 35,
         "hits": []
       }
     },
     "binance": {
       "long": {
         "scanned": 32,
-        "hits": []
+        "hits": [
+          {
+            "sym": "AVAXUSDT",
+            "name": "AVAX",
+            "chgRate": 4.31,
+            "score": 6,
+            "reasons": [
+              "거래량 폭증 10.1배 (20봉 평균 대비, 최근 3봉 최대)",
+              "정배열 (종가 > MA20 $6.49 > MA60 $6.45)",
+              "RSI 70 상승 우위"
+            ],
+            "price": 6.695,
+            "stop": 6.526799999999999,
+            "tgt": 6.877,
+            "rr": 1.08
+          }
+        ]
       },
       "short": {
         "scanned": 32,
