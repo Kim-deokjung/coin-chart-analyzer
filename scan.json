@@ -1,42 +1,58 @@
 {
-  "generatedAt": "2026-08-16T06:29:38.941Z",
+  "generatedAt": "2026-08-16T07:09:29.694Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 33,
+        "scanned": 32,
         "hits": []
       },
       "short": {
-        "scanned": 33,
+        "scanned": 32,
         "hits": []
       }
     },
     "binance": {
       "long": {
-        "scanned": 22,
-        "hits": []
-      },
-      "short": {
-        "scanned": 22,
+        "scanned": 21,
         "hits": [
           {
-            "sym": "AVAXUSDT",
-            "name": "AVAX",
-            "chgRate": -4.8,
+            "sym": "XPLUSDT",
+            "name": "XPL",
+            "chgRate": 1.27,
             "score": 5,
             "reasons": [
-              "변동성 이탈선 $6.33 하향",
-              "!거래량 0.5배 — 뒷받침이 약한 움직임",
-              "역배열 (종가 < MA20 $6.45 < MA60 $6.47)",
-              "RSI 29 하락 우위"
+              "거래량 급증 3.7배",
+              "정배열 (종가 > MA20 $0.07698 > MA60 $0.07628)",
+              "RSI 63 상승 우위"
             ],
-            "price": 6.323,
-            "stop": 6.356,
-            "tgt": 6.215,
-            "rr": 3.27
+            "price": 0.0782,
+            "stop": 0.077612,
+            "tgt": 0.07936,
+            "rr": 1.97
+          }
+        ]
+      },
+      "short": {
+        "scanned": 21,
+        "hits": [
+          {
+            "sym": "ACEUSDT",
+            "name": "ACE",
+            "chgRate": -49.28,
+            "score": 5,
+            "reasons": [
+              "거래량 1.3배",
+              "24시간 -49.3% 변동",
+              "역배열 (종가 < MA20 $0.1599 < MA60 $0.1979)",
+              "RSI 43 하락 우위"
+            ],
+            "price": 0.1561,
+            "stop": 0.1611,
+            "tgt": 0.11046666666666667,
+            "rr": 9.13
           }
         ]
       }
