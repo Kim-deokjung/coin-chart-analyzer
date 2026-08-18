@@ -1,32 +1,17 @@
 {
-  "generatedAt": "2026-08-18T05:01:01.812Z",
+  "generatedAt": "2026-08-18T05:53:06.882Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 29,
+        "scanned": 30,
         "hits": []
       },
       "short": {
-        "scanned": 29,
-        "hits": [
-          {
-            "sym": "KRW-PIEVERSE",
-            "name": "파이버스",
-            "chgRate": -5.58,
-            "score": 5,
-            "reasons": [
-              "거래량 폭증 6.8배 (20봉 평균 대비, 최근 3봉 최대)",
-              "MACD 데드크로스 (직전 봉)"
-            ],
-            "price": 1243,
-            "stop": 1265,
-            "tgt": 1211.6666666666667,
-            "rr": 1.42
-          }
-        ]
+        "scanned": 30,
+        "hits": []
       }
     },
     "binance": {
@@ -40,17 +25,17 @@
           {
             "sym": "XPLUSDT",
             "name": "XPL",
-            "chgRate": -1.52,
+            "chgRate": -1.58,
             "score": 5,
             "reasons": [
               "거래량 급증 2.3배",
-              "역배열 (종가 < MA20 $0.07618 < MA60 $0.0765)",
-              "RSI 39 하락 우위"
+              "역배열 (종가 < MA20 $0.07619 < MA60 $0.0765)",
+              "RSI 41 하락 우위"
             ],
-            "price": 0.07494,
+            "price": 0.07514,
             "stop": 0.07556,
             "tgt": 0.0737125,
-            "rr": 1.98
+            "rr": 3.4
           }
         ]
       }
