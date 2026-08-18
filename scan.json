@@ -1,23 +1,58 @@
 {
-  "generatedAt": "2026-08-18T22:16:27.759Z",
+  "generatedAt": "2026-08-18T22:48:29.536Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 28,
+        "scanned": 27,
         "hits": []
       },
       "short": {
-        "scanned": 28,
-        "hits": []
+        "scanned": 27,
+        "hits": [
+          {
+            "sym": "KRW-DOGE",
+            "name": "도지코인",
+            "chgRate": -0.81,
+            "score": 5,
+            "reasons": [
+              "변동성 이탈선 98.45원 하향",
+              "!거래량 1.0배 — 뒷받침이 약한 움직임",
+              "역배열 (종가 < MA20 98.49원 < MA60 98.83원)",
+              "RSI 44 하락 우위"
+            ],
+            "price": 98.4,
+            "stop": 98.8,
+            "tgt": 98,
+            "rr": 1
+          }
+        ]
       }
     },
     "binance": {
       "long": {
         "scanned": 30,
-        "hits": []
+        "hits": [
+          {
+            "sym": "PUMPUSDT",
+            "name": "PUMP",
+            "chgRate": 9.17,
+            "score": 9,
+            "reasons": [
+              "직전 20봉 고점 $0.002987 상향 돌파",
+              "거래량 급증 2.7배",
+              "24시간 +9.2% 변동",
+              "정배열 (종가 > MA20 $0.002824 > MA60 $0.002812)",
+              "RSI 74 상승 우위"
+            ],
+            "price": 0.003015,
+            "stop": 0.0029916666666666668,
+            "tgt": 0.002987,
+            "rr": 1.2
+          }
+        ]
       },
       "short": {
         "scanned": 30,
