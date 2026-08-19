@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-19T03:24:08.347Z",
+  "generatedAt": "2026-08-19T04:06:21.329Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 28,
+        "scanned": 29,
         "hits": []
       },
       "short": {
-        "scanned": 28,
+        "scanned": 29,
         "hits": []
       }
     },
@@ -21,38 +21,7 @@
       },
       "short": {
         "scanned": 31,
-        "hits": [
-          {
-            "sym": "GPSUSDT",
-            "name": "GPS",
-            "chgRate": -14.45,
-            "score": 5,
-            "reasons": [
-              "거래량 폭증 5.5배 (20봉 평균 대비, 최근 3봉 최대)",
-              "24시간 -14.5% 변동",
-              "RSI 30 하락 우위"
-            ],
-            "price": 0.0141,
-            "stop": 0.01419,
-            "tgt": 0.010935,
-            "rr": 35.17
-          },
-          {
-            "sym": "NEARUSDT",
-            "name": "NEAR",
-            "chgRate": -1.96,
-            "score": 5,
-            "reasons": [
-              "거래량 급증 2.3배",
-              "역배열 (종가 < MA20 $1.61 < MA60 $1.62)",
-              "RSI 43 하락 우위"
-            ],
-            "price": 1.597,
-            "stop": 1.6106,
-            "tgt": 1.564,
-            "rr": 2.43
-          }
-        ]
+        "hits": []
       }
     }
   }
