@@ -1,73 +1,89 @@
 {
-  "generatedAt": "2026-08-19T08:29:28.458Z",
+  "generatedAt": "2026-08-19T09:06:42.950Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 25,
+        "scanned": 24,
         "hits": [
           {
-            "sym": "KRW-EUL",
-            "name": "오일러",
-            "chgRate": 5.98,
-            "score": 5,
+            "sym": "KRW-GRVT",
+            "name": "그래비티토큰",
+            "chgRate": 0.97,
+            "score": 6,
             "reasons": [
-              "거래량 급증 3.0배",
-              "정배열 (종가 > MA20 1,675원 > MA60 1,633원)",
-              "RSI 67 상승 우위"
+              "거래량 폭증 12.7배 (20봉 평균 대비, 최근 3봉 최대)",
+              "정배열 (종가 > MA20 409.70원 > MA60 402.85원)",
+              "RSI 59 상승 우위"
             ],
-            "price": 1737,
-            "stop": 1728,
-            "tgt": 1795,
-            "rr": 6.44
+            "price": 417,
+            "stop": 409.3,
+            "tgt": 437,
+            "rr": 2.6
           }
         ]
       },
       "short": {
-        "scanned": 25,
+        "scanned": 24,
         "hits": []
       }
     },
     "binance": {
       "long": {
-        "scanned": 32,
+        "scanned": 33,
         "hits": [
           {
-            "sym": "SKHYBUSDT",
-            "name": "SKHYB",
-            "chgRate": 0.9,
-            "score": 6,
+            "sym": "HEMIUSDT",
+            "name": "HEMI",
+            "chgRate": 12.66,
+            "score": 7,
             "reasons": [
-              "거래량 폭증 5.9배 (20봉 평균 대비, 최근 3봉 최대)",
-              "MACD 골든크로스 (2봉 전)",
-              "RSI 63 상승 우위"
+              "거래량 폭증 4.9배 (20봉 평균 대비, 최근 3봉 최대)",
+              "24시간 +12.7% 변동",
+              "정배열 (종가 > MA20 $0.007214 > MA60 $0.006855)",
+              "RSI 62 상승 우위"
             ],
-            "price": 164.7,
-            "stop": 164.06,
-            "tgt": 167.5490909090909,
-            "rr": 4.45
+            "price": 0.00808,
+            "stop": 0.007515,
+            "tgt": 0.009,
+            "rr": 1.63
           },
           {
-            "sym": "SNDKBUSDT",
-            "name": "SNDKB",
-            "chgRate": -0.72,
+            "sym": "PLUMEUSDT",
+            "name": "PLUME",
+            "chgRate": 1.68,
             "score": 5,
             "reasons": [
               "거래량 급증 2.3배",
-              "MACD 골든크로스 (2봉 전)",
-              "RSI 56 상승 우위"
+              "MACD 골든크로스 (1봉 전)",
+              "RSI 64 상승 우위"
             ],
-            "price": 1669.85,
-            "stop": 1661.7892857142856,
-            "tgt": 1761.99,
-            "rr": 11.43
+            "price": 0.01267,
+            "stop": 0.012221428571428572,
+            "tgt": 0.013205000000000001,
+            "rr": 1.19
+          },
+          {
+            "sym": "LINKUSDT",
+            "name": "LINK",
+            "chgRate": 3.42,
+            "score": 5,
+            "reasons": [
+              "거래량 급증 3.7배",
+              "정배열 (종가 > MA20 $9.57 > MA60 $9.50)",
+              "RSI 68 상승 우위"
+            ],
+            "price": 9.778,
+            "stop": 9.739,
+            "tgt": 9.84,
+            "rr": 1.59
           }
         ]
       },
       "short": {
-        "scanned": 32,
+        "scanned": 33,
         "hits": []
       }
     }
