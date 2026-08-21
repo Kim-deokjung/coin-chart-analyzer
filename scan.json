@@ -1,10 +1,37 @@
 {
-  "generatedAt": "2026-08-21T17:22:46.312Z",
+  "generatedAt": "2026-08-21T17:54:21.545Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
+      "long": {
+        "scanned": 40,
+        "hits": [
+          {
+            "sym": "KRW-KAITO",
+            "name": "카이토",
+            "chgRate": 2.87,
+            "score": 5,
+            "reasons": [
+              "변동성 돌파선 500.00원 상향 (시가 + 전봉 변동폭×0.5)",
+              "!거래량 1.0배 — 뒷받침이 약한 움직임",
+              "정배열 (종가 > MA20 487.35원 > MA60 484.18원)",
+              "RSI 61 상승 우위"
+            ],
+            "price": 502,
+            "stop": 493,
+            "tgt": 513,
+            "rr": 1.22
+          }
+        ]
+      },
+      "short": {
+        "scanned": 40,
+        "hits": []
+      }
+    },
+    "binance": {
       "long": {
         "scanned": 40,
         "hits": []
@@ -13,77 +40,19 @@
         "scanned": 40,
         "hits": [
           {
-            "sym": "KRW-HBAR",
-            "name": "헤데라",
-            "chgRate": 2.94,
-            "score": 5,
-            "reasons": [
-              "변동성 이탈선 106.00원 하향",
-              "거래량 1.6배",
-              "MACD 데드크로스 (직전 봉)"
-            ],
-            "price": 105,
-            "stop": 107,
-            "tgt": 102,
-            "rr": 1.5
-          }
-        ]
-      }
-    },
-    "binance": {
-      "long": {
-        "scanned": 40,
-        "hits": [
-          {
-            "sym": "PUMPUSDT",
-            "name": "PUMP",
-            "chgRate": 9.37,
-            "score": 5,
-            "reasons": [
-              "거래량 1.8배",
-              "24시간 +9.4% 변동",
-              "정배열 (종가 > MA20 $0.003944 > MA60 $0.003488)",
-              "RSI 57 상승 우위"
-            ],
-            "price": 0.00398,
-            "stop": 0.0037825000000000003,
-            "tgt": 0.004189,
-            "rr": 1.06
-          }
-        ]
-      },
-      "short": {
-        "scanned": 40,
-        "hits": [
-          {
             "sym": "PYTHUSDT",
             "name": "PYTH",
-            "chgRate": 6,
+            "chgRate": 6.88,
             "score": 7,
             "reasons": [
               "변동성 이탈선 $0.04788 하향",
               "거래량 폭증 10.0배 (20봉 평균 대비, 최근 3봉 최대)",
               "MACD 데드크로스 (2봉 전)"
             ],
-            "price": 0.04715,
+            "price": 0.04726,
             "stop": 0.04897,
             "tgt": 0.04318666666666667,
-            "rr": 2.18
-          },
-          {
-            "sym": "NEARUSDT",
-            "name": "NEAR",
-            "chgRate": 6.58,
-            "score": 5,
-            "reasons": [
-              "변동성 이탈선 $1.89 하향",
-              "거래량 1.6배",
-              "MACD 데드크로스 (직전 봉)"
-            ],
-            "price": 1.882,
-            "stop": 1.949,
-            "tgt": 1.771,
-            "rr": 1.66
+            "rr": 2.38
           }
         ]
       }
