@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------
+# 업비트 자동매매 봇 설정
+# ---------------------------------------------------------------
+
+# paper : 모의투자 (실제 시세, 가상 잔고. 주문 안 나감)
+# live  : 실거래 (.env 의 API 키 필요. 실제 돈이 나갑니다)
+mode: paper
+
+# 거래 대상 (KRW 마켓)
+tickers:
+  - KRW-BTC
+  - KRW-ETH
+
+# 사용할 전략. bot/strategies/ 에 등록된 이름.
+#   volatility_breakout : 변동성 돌파 (래리 윌리엄스)
+#   ma_cross            : 이동평균 골든/데드크로스
+#   rsi                 : RSI 과매도 매수 / 과매수 매도
+strategy: volatility_breakout
+strategy_params:
+  volatility_breakout:
+    k: 0.5
+  ma_cross:
+    short: 5
+    long: 20
+    interval: day        # day, minute240, minute60, minute15 ...
+  rsi:
+    period: 14
+    buy_below: 30
+    sell_above: 70
+    interval: minute60
+
+# 매매 루프 주기(초)
+poll_seconds: 60
+
+# 모의투자 초기 자본(원)
+initial_krw: 1000000
+
+# 업비트 수수료율 (0.05%)
+fee_rate: 0.0005
+
+# 리스크 관리
+risk:
+  max_positions: 2          # 동시에 보유할 최대 코인 수
+  order_krw_ratio: 0.5      # 매수 1회당 사용할 비율 (현재 KRW 잔고 기준)
+  min_order_krw: 5000       # 업비트 최소 주문 금액
+  stop_loss_pct: -5.0       # 평단 대비 이 % 이하로 떨어지면 전량 매도 (0이면 비활성)
+  take_profit_pct: 0        # 평단 대비 이 % 이상 오르면 전량 매도 (0이면 비활성)
+
+# 기록 DB (대시보드가 읽음)
+db_path: data/bot.db
+
+# 대시보드
+dashboard:
+  host: 127.0.0.1
+  port: 8000

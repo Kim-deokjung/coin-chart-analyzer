@@ -1,0 +1,9 @@
+pyupbit>=0.2.34
+pandas>=2.0
+numpy>=1.26
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pyyaml>=6.0
+python-dotenv>=1.0
+pytest>=8.0
+ruamel.yaml>=0.18

@@ -55,6 +55,14 @@ GitHub Actions가 **30분마다** 서버에서 [`scan.js`](scan.js)를 실행해
 
 기준 봉과 분석 종목 수는 [`.github/workflows/scan.yml`](.github/workflows/scan.yml)의 `SCAN_TF`(기본 `m60`)와 `SCAN_TOP`(기본 40)에서 바꿉니다. 저장소 **Actions** 탭에서 수동 실행(`Run workflow`)도 됩니다.
 
+## 🤖 자동매매 봇 (`trading-bot/`)
+
+차트 분석기와 별개로, 업비트 KRW 마켓에서 실제로 매매를 돌리는 Python 봇이 [`trading-bot/`](trading-bot/) 에 있습니다.
+전략 교체(변동성 돌파 · 이동평균 교차 · RSI), 모의투자(paper) 기본, 백테스트, 그리고 브라우저 관리자 화면(봇 시작/정지 · 설정 · 백테스트)을 포함합니다.
+실행은 맥에서 합니다 — `trading-bot/start.command` 더블클릭. 자세한 내용은 [`trading-bot/README.md`](trading-bot/README.md).
+
+> 실거래는 API 키와 `mode: live` 설정이 있어야만 동작하며, 실제 돈이 움직입니다. 반드시 모의투자와 백테스트로 먼저 검증하세요.
+
 ## 사용법
 
 주소를 열고 상단에서 고르기만 하면 됩니다. 설치도, 회원가입도, API 키도 필요 없습니다.

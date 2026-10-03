@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upbit Bot Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#262a33; --fg:#e6e8ee; --muted:#8b91a0; --up:#ef5350; --down:#3b82f6; --accent:#f7b32b; --ok:#5bd98a; --danger:#ff5c5c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  .badge { padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .badge.paper { background:#1f3b2a; color:#5bd98a; }
+  .badge.live { background:#4a1d1d; color:#ff7b7b; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#555; display:inline-block; margin-right:6px; }
+  .dot.on { background:var(--ok); box-shadow:0 0 8px var(--ok); }
+  .muted { color:var(--muted); font-size:12px; }
+  nav { display:flex; gap:4px; padding:0 20px; border-bottom:1px solid var(--line); }
+  nav button { background:none; border:none; color:var(--muted); padding:10px 14px; cursor:pointer; font-size:14px; border-bottom:2px solid transparent; }
+  nav button.active { color:var(--fg); border-bottom-color:var(--accent); }
+  main { padding:16px 20px; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(4,1fr); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .kpi .label { color:var(--muted); font-size:12px; }
+  .kpi .value { font-size:22px; font-weight:700; margin-top:2px; }
+  .wide { grid-column:span 4; } .half { grid-column:span 2; } .three { grid-column:span 3; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { padding:6px 8px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; }
+  td:first-child, th:first-child { text-align:left; }
+  .up { color:var(--up); } .down { color:var(--down); }
+  .BUY { color:var(--up); font-weight:600; } .SELL { color:var(--down); font-weight:600; }
+  h2 { font-size:14px; margin:0 0 10px; color:var(--muted); font-weight:600; }
+  .scroll { max-height:320px; overflow:auto; }
+  pre { margin:0; font-size:12px; color:#c6cad3; white-space:pre-wrap; }
+  .tab { display:none; } .tab.active { display:block; }
+  button.btn { background:#262a33; color:var(--fg); border:1px solid #333845; border-radius:7px; padding:7px 14px; cursor:pointer; font-size:13px; }
+  button.btn:hover { background:#2f3440; }
+  button.btn.primary { background:var(--accent); color:#111; border-color:var(--accent); font-weight:600; }
+  button.btn.danger { background:#3a1f1f; color:#ff8a8a; border-color:#5a2a2a; }
+  button.btn.ok { background:#1f3b2a; color:#5bd98a; border-color:#2a5a3a; }
+  button.btn:disabled { opacity:.45; cursor:not-allowed; }
+  label.f { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+  input, select { background:#0f1115; color:var(--fg); border:1px solid #333845; border-radius:6px; padding:7px 9px; font-size:13px; width:100%; }
+  input:focus, select:focus { outline:1px solid var(--accent); }
+  .row { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); margin-bottom:12px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .chip { background:#262a33; border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; }
+  .chip:hover { background:#3a2f2f; text-decoration:line-through; }
+  .radio { display:flex; gap:14px; align-items:center; font-size:13px; color:var(--fg); }
+  .radio input { width:auto; }
+  .toast { position:fixed; right:20px; bottom:20px; background:#262a33; border:1px solid #3a3f4b; padding:10px 14px; border-radius:8px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:420px; }
+  .toast.show { opacity:1; }
+  .toast.err { border-color:var(--danger); color:#ffb3b3; }
+  .hint { font-size:12px; color:var(--muted); margin:4px 0 10px; }
+  .warn { background:#3a2a12; border:1px solid #6b4a12; color:#ffd48a; padding:8px 12px; border-radius:7px; font-size:13px; margin-bottom:12px; }
+  tr.clickable { cursor:pointer; } tr.clickable:hover td { background:#1f232c; }
+  @media (max-width:900px){ .grid{grid-template-columns:repeat(2,1fr);} .wide,.half,.three{grid-column:span 2;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Upbit Bot</h1>
+  <span id="mode" class="badge paper">PAPER</span>
+  <span id="strategy" class="muted"></span>
+  <span style="margin-left:auto" class="muted"><span id="dot" class="dot"></span><span id="botState">정지됨</span></span>
+  <button id="btnStart" class="btn ok">▶ 시작</button>
+  <button id="btnStop" class="btn danger" disabled>■ 정지</button>
+</header>
+<nav>
+  <button data-tab="dash" class="active">대시보드</button>
+  <button data-tab="settings">설정</button>
+  <button data-tab="backtest">백테스트</button>
+</nav>
+<main>
+
+<!-- ================= 대시보드 ================= -->
+<section id="tab-dash" class="tab active">
+  <div class="grid">
+    <div class="card kpi"><div class="label">총 자산</div><div class="value" id="total">-</div></div>
+    <div class="card kpi"><div class="label">누적 수익률</div><div class="value" id="ret">-</div></div>
+    <div class="card kpi"><div class="label">보유 KRW</div><div class="value" id="krw">-</div></div>
+    <div class="card kpi"><div class="label">실현 손익</div><div class="value" id="realized">-</div></div>
+    <div class="card wide"><h2>자산 추이</h2><canvas id="equityChart" height="80"></canvas></div>
+    <div class="card half"><h2>보유 포지션</h2>
+      <table><thead><tr><th>종목</th><th>수량</th><th>평단</th><th>현재가</th><th>평가액</th><th>수익률</th></tr></thead>
+      <tbody id="positions"></tbody></table>
+    </div>
+    <div class="card half"><h2>감시 종목 현재가 <span id="lastRun" class="muted" style="float:right;font-weight:400"></span></h2>
+      <table><thead><tr><th>종목</th><th>현재가</th></tr></thead><tbody id="prices"></tbody></table>
+    </div>
+    <div class="card wide"><h2>체결 내역</h2><div class="scroll">
+      <table><thead><tr><th>시각</th><th>종목</th><th>구분</th><th>가격</th><th>수량</th><th>금액</th><th>수수료</th><th>손익</th><th>사유</th></tr></thead>
+      <tbody id="trades"></tbody></table></div>
+    </div>
+    <div class="card wide"><h2>로그</h2><div class="scroll"><pre id="logs"></pre></div></div>
+  </div>
+</section>
+
+<!-- ================= 설정 ================= -->
+<section id="tab-settings" class="tab">
+  <div class="grid">
+    <div class="card wide">
+      <div id="runningWarn" class="warn" style="display:none">봇 실행 중에는 설정을 저장할 수 없습니다. 먼저 정지하세요.</div>
+      <h2>기본</h2>
+      <div class="row">
+        <label class="f">모드
+          <div class="radio">
+            <label><input type="radio" name="cfgMode" value="paper"> 모의투자</label>
+            <label><input type="radio" name="cfgMode" value="live" id="modeLive"> 실거래</label>
+          </div>
+          <span id="liveHint" class="hint"></span>
+        </label>
+        <label class="f">매매 주기(초)<input id="cfgPoll" type="number" min="5"></label>
+        <label class="f">모의투자 초기자본(원)<input id="cfgInitial" type="number" min="5000" step="10000"></label>
+        <label class="f">수수료율<input id="cfgFee" type="number" step="0.0001"></label>
+      </div>
+      <h2>종목</h2>
+      <div class="row" style="grid-template-columns:260px auto">
+        <label class="f">추가<input id="tickerInput" list="tickerList" placeholder="KRW-BTC 입력 후 Enter"><datalist id="tickerList"></datalist></label>
+      </div>
+      <div class="chips" id="tickerChips"></div>
+      <div class="hint">칩을 클릭하면 제거됩니다.</div>
+
+      <h2>전략</h2>
+      <div class="row" style="grid-template-columns:260px">
+        <label class="f">사용 전략<select id="cfgStrategy"></select></label>
+      </div>
+      <div id="strategyDoc" class="hint"></div>
+      <div class="row" id="cfgParams"></div>
+
+      <h2>리스크</h2>
+      <div class="row">
+        <label class="f">최대 보유 종목 수<input id="rMax" type="number" min="1"></label>
+        <label class="f">1회 매수 비율 (KRW 잔고 기준, 0~1)<input id="rRatio" type="number" step="0.05" min="0.01" max="1"></label>
+        <label class="f">최소 주문 금액(원)<input id="rMin" type="number"></label>
+        <label class="f">손절 % (0=끔, 예: -5)<input id="rSL" type="number" step="0.5"></label>
+        <label class="f">익절 % (0=끔, 예: 10)<input id="rTP" type="number" step="0.5"></label>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button id="btnSave" class="btn primary">설정 저장</button>
+        <button id="btnReload" class="btn">되돌리기</button>
+        <span style="flex:1"></span>
+        <button id="btnReset" class="btn danger">모의투자 초기화</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 백테스트 ================= -->
+<section id="tab-backtest" class="tab">
+  <div class="grid">
+    <div class="card wide">
+      <h2>조건</h2>
+      <div class="row">
+        <label class="f">전략<select id="btStrategy"></select></label>
+        <label class="f">종목<input id="btTicker" list="tickerList" value="KRW-BTC"></label>
+        <label class="f">기간(일)<input id="btDays" type="number" value="365" min="7" max="2000"></label>
+        <label class="f">초기자본(원)<input id="btInitial" type="number" value="1000000"></label>
+        <label class="f">손절 % (0=끔)<input id="btSL" type="number" step="0.5" value="0"></label>
+        <label class="f">익절 % (0=끔)<input id="btTP" type="number" step="0.5" value="0"></label>
+      </div>
+      <div class="row" id="btParams"></div>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button id="btnRunBt" class="btn primary">백테스트 실행</button>
+        <button id="btnRunAll" class="btn">모든 전략 비교</button>
+        <span id="btStatus" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="card wide" id="btResultCard" style="display:none">
+      <h2 id="btTitle">결과</h2>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="card kpi"><div class="label">수익률</div><div class="value" id="mRet">-</div></div>
+        <div class="card kpi"><div class="label">단순 보유 수익률</div><div class="value" id="mBH">-</div></div>
+        <div class="card kpi"><div class="label">최대 낙폭 (MDD)</div><div class="value" id="mMDD">-</div></div>
+        <div class="card kpi"><div class="label">거래 / 승률</div><div class="value" id="mTrades">-</div></div>
+      </div>
+      <canvas id="btChart" height="80"></canvas>
+      <h2 style="margin-top:14px">체결</h2>
+      <div class="scroll"><table><thead><tr><th>시각</th><th>구분</th><th>가격</th><th>수량</th><th>금액</th><th>손익</th><th>사유</th></tr></thead>
+      <tbody id="btTrades"></tbody></table></div>
+    </div>
+
+    <div class="card wide"><h2>실행 기록 (클릭하면 결과 보기)</h2>
+      <table><thead><tr><th>시각</th><th>전략</th><th>종목</th><th>기간</th><th>파라미터</th><th>수익률</th><th>단순보유</th><th>MDD</th><th>거래</th><th>승률</th><th>상태</th></tr></thead>
+      <tbody id="btHistory"></tbody></table>
+    </div>
+  </div>
+</section>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+// ---------- utils
+const $ = s => document.querySelector(s);
+const fmt = (n, d=0) => n==null ? '-' : Number(n).toLocaleString('ko-KR',{maximumFractionDigits:d, minimumFractionDigits:d});
+const pct = n => n==null ? '-' : (n>=0?'+':'') + Number(n).toFixed(2) + '%';
+const cls = n => n>0 ? 'up' : n<0 ? 'down' : '';
+async function api(url, opt={}) {
+  const r = await fetch(url, {headers:{'Content-Type':'application/json'}, ...opt});
+  const body = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(body.detail || r.statusText);
+  return body;
+}
+let toastT;
+function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',3500); }
+
+// ---------- tabs
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+b.dataset.tab));
+});
+
+// ---------- state
+let STRATEGIES = [];  // [{name,label,params,doc}]
+let CONFIG = null;    // raw config
+let HAS_KEY = false;
+let running = false;
+let equityChart, btChart;
+
+// ---------- 봇 제어
+async function refreshBotState(st){
+  running = !!st.running;
+  $('#dot').className = 'dot' + (running?' on':'');
+  $('#botState').textContent = running ? `실행 중 (${st.bot?.mode||''}, ${(st.bot?.started_at||'').replace('T',' ')} 부터)` : (st.bot?.error ? '오류 정지: '+st.bot.error : '정지됨');
+  $('#btnStart').disabled = running; $('#btnStop').disabled = !running;
+  $('#runningWarn').style.display = running ? '' : 'none';
+  $('#btnSave').disabled = running; $('#btnReset').disabled = running;
+}
+$('#btnStart').onclick = async ()=>{
+  const mode = CONFIG?.mode || 'paper';
+  let confirm_live = false;
+  if (mode === 'live') {
+    if (!confirm('실거래(LIVE) 모드입니다. 실제 주문이 나가고 실제 돈이 움직입니다.\n정말 시작할까요?')) return;
+    if (prompt('확인을 위해 LIVE 라고 입력하세요') !== 'LIVE') return;
+    confirm_live = true;
+  }
+  try { await api('/api/bot/start',{method:'POST', body:JSON.stringify({confirm_live})}); toast('봇을 시작했습니다'); refresh(); }
+  catch(e){ toast('시작 실패: '+e.message, true); }
+};
+$('#btnStop').onclick = async ()=>{ try { await api('/api/bot/stop',{method:'POST'}); toast('봇을 정지했습니다'); refresh(); } catch(e){ toast(e.message,true);} };
+$('#btnReset').onclick = async ()=>{
+  if (!confirm('모의투자 잔고·체결·자산 기록을 모두 지우고 초기자본으로 되돌립니다. 계속할까요?')) return;
+  try { await api('/api/paper/reset',{method:'POST'}); toast('초기화했습니다'); refresh(); } catch(e){ toast(e.message,true); }
+};
+
+// ---------- 대시보드
+async function refresh(){
+  try {
+    const [st, trades, eq, logs] = await Promise.all([api('/api/status'), api('/api/trades?limit=100'), api('/api/equity'), api('/api/logs?limit=80')]);
+    refreshBotState(st);
+    const mode = st.config_mode || st.mode || 'paper';
+    const m = $('#mode'); m.textContent = mode.toUpperCase(); m.className = 'badge ' + mode;
+    $('#strategy').textContent = st.strategy_desc || st.strategy || '';
+    $('#lastRun').textContent = st.last_run ? '갱신 ' + st.last_run.replace('T',' ') : '';
+
+    const init = st.initial_equity ?? st.config_initial_krw;
+    $('#total').textContent = st.total_krw!=null ? fmt(st.total_krw)+'원' : '-';
+    const ret = (st.total_krw!=null && init) ? (st.total_krw/init-1)*100 : null;
+    $('#ret').textContent = pct(ret); $('#ret').className = 'value ' + cls(ret);
+    $('#krw').textContent = st.krw!=null ? fmt(st.krw)+'원' : '-';
+    const realized = trades.reduce((a,t)=>a+(t.pnl_krw||0),0);
+    $('#realized').textContent = (realized>=0?'+':'')+fmt(realized)+'원'; $('#realized').className='value '+cls(realized);
+
+    $('#positions').innerHTML = (st.positions||[]).map(p=>`<tr><td>${p.ticker}</td><td>${fmt(p.volume,6)}</td><td>${fmt(p.avg_price)}</td><td>${fmt(p.price)}</td><td>${fmt(p.value)}</td><td class="${cls(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">없음</td></tr>';
+    $('#prices').innerHTML = Object.entries(st.prices||{}).map(([t,p])=>`<tr><td>${t}</td><td>${fmt(p)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">봇을 시작하면 표시됩니다</td></tr>';
+    $('#trades').innerHTML = trades.map(t=>`<tr><td>${t.ts.replace('T',' ')}</td><td>${t.ticker}</td><td class="${t.side}">${t.side==='BUY'?'매수':'매도'}</td><td>${fmt(t.price)}</td><td>${fmt(t.volume,6)}</td><td>${fmt(t.krw)}</td><td>${fmt(t.fee)}</td><td class="${cls(t.pnl_krw)}">${t.pnl_krw==null?'-':(t.pnl_krw>=0?'+':'')+fmt(t.pnl_krw)}</td><td style="text-align:left">${t.reason||''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">체결 없음</td></tr>';
+    $('#logs').textContent = logs.map(l=>`${l.ts.replace('T',' ')} [${l.level}] ${l.message}`).join('\n');
+
+    const labels = eq.map(e=>e.ts.replace('T',' ').slice(5,16)), data = eq.map(e=>e.total_krw);
+    if(!equityChart){
+      equityChart = new Chart($('#equityChart'), { type:'line', data:{labels, datasets:[{data, borderColor:'#f7b32b', backgroundColor:'rgba(247,179,43,.12)', fill:true, pointRadius:0, tension:.2, borderWidth:1.5}]},
+        options:{animation:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#8b91a0', maxTicksLimit:10}, grid:{color:'#262a33'}}, y:{ticks:{color:'#8b91a0', callback:v=>fmt(v)}, grid:{color:'#262a33'}}}} });
+    } else { equityChart.data.labels = labels; equityChart.data.datasets[0].data = data; equityChart.update(); }
+  } catch(e) { console.error(e); }
+}
+
+// ---------- 설정
+function paramInputs(container, strategyName, values){
+  const s = STRATEGIES.find(x=>x.name===strategyName); if(!s) { container.innerHTML=''; return; }
+  container.innerHTML = Object.entries(s.params).map(([k,def])=>{
+    const v = values?.[k] ?? def;
+    if (k==='interval') return `<label class="f">캔들 단위<select data-param="interval">${['day','minute240','minute60','minute30','minute15','minute10','minute5','minute3','minute1'].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></label>`;
+    return `<label class="f">${k} <span class="muted">(기본 ${def})</span><input data-param="${k}" type="number" step="any" value="${v}"></label>`;
+  }).join('');
+}
+function readParams(container){
+  const out = {};
+  container.querySelectorAll('[data-param]').forEach(el=>{ const k=el.dataset.param; out[k] = k==='interval' ? el.value : Number(el.value); });
+  return out;
+}
+function renderTickers(){
+  $('#tickerChips').innerHTML = (CONFIG.tickers||[]).map(t=>`<span class="chip" data-t="${t}">${t} ✕</span>`).join('');
+  $('#tickerChips').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ CONFIG.tickers = CONFIG.tickers.filter(x=>x!==c.dataset.t); renderTickers(); });
+}
+$('#tickerInput').addEventListener('keydown', e=>{
+  if (e.key!=='Enter') return; e.preventDefault();
+  const v = e.target.value.trim().toUpperCase(); if(!v) return;
+  if (!/^KRW-[A-Z0-9]+$/.test(v)) { toast('형식: KRW-BTC', true); return; }
+  if (!CONFIG.tickers.includes(v)) { CONFIG.tickers.push(v); renderTickers(); }
+  e.target.value='';
+});
+function fillSettings(){
+  const c = CONFIG;
+  document.querySelectorAll('input[name=cfgMode]').forEach(r=>r.checked = r.value===(c.mode||'paper'));
+  $('#modeLive').disabled = !HAS_KEY;
+  $('#liveHint').textContent = HAS_KEY ? '실거래 키가 등록되어 있습니다. 소액으로 먼저 검증하세요.' : '실거래는 .env 파일에 UPBIT_ACCESS_KEY / UPBIT_SECRET_KEY 를 넣고 서버를 재시작해야 선택할 수 있습니다.';
+  $('#cfgPoll').value = c.poll_seconds ?? 60; $('#cfgInitial').value = c.initial_krw ?? 1000000; $('#cfgFee').value = c.fee_rate ?? 0.0005;
+  CONFIG.tickers = [...(c.tickers||[])]; renderTickers();
+  $('#cfgStrategy').innerHTML = STRATEGIES.map(s=>`<option value="${s.name}" ${s.name===c.strategy?'selected':''}>${s.label} (${s.name})</option>`).join('');
+  onStrategyChange();
+  const r = c.risk||{};
+  $('#rMax').value = r.max_positions ?? 2; $('#rRatio').value = r.order_krw_ratio ?? 0.5; $('#rMin').value = r.min_order_krw ?? 5000; $('#rSL').value = r.stop_loss_pct ?? 0; $('#rTP').value = r.take_profit_pct ?? 0;
+}
+function onStrategyChange(){
+  const name = $('#cfgStrategy').value;
+  $('#strategyDoc').textContent = STRATEGIES.find(s=>s.name===name)?.doc || '';
+  paramInputs($('#cfgParams'), name, CONFIG.strategy_params?.[name]);
+}
+$('#cfgStrategy').onchange = onStrategyChange;
+$('#btnReload').onclick = loadConfig;
+$('#btnSave').onclick = async ()=>{
+  const name = $('#cfgStrategy').value;
+  const changes = {
+    mode: document.querySelector('input[name=cfgMode]:checked').value,
+    tickers: CONFIG.tickers, strategy: name,
+    strategy_params: { [name]: readParams($('#cfgParams')) },
+    poll_seconds: Number($('#cfgPoll').value), initial_krw: Number($('#cfgInitial').value), fee_rate: Number($('#cfgFee').value),
+    risk: { max_positions: Number($('#rMax').value), order_krw_ratio: Number($('#rRatio').value), min_order_krw: Number($('#rMin').value), stop_loss_pct: Number($('#rSL').value), take_profit_pct: Number($('#rTP').value) },
+  };
+  if (!changes.tickers.length) { toast('종목을 하나 이상 추가하세요', true); return; }
+  try { const r = await api('/api/config',{method:'PUT', body:JSON.stringify(changes)}); CONFIG = r.config; fillSettings(); toast('저장했습니다. 다음 시작부터 적용됩니다.'); refresh(); }
+  catch(e){ toast('저장 실패: '+e.message, true); }
+};
+async function loadConfig(){
+  const r = await api('/api/config'); CONFIG = r.config; HAS_KEY = r.has_api_key; fillSettings();
+}
+
+// ---------- 백테스트
+function fillBtForm(){
+  $('#btStrategy').innerHTML = STRATEGIES.map(s=>`<option value="${s.name}">${s.label} (${s.name})</option>`).join('');
+  $('#btStrategy').value = CONFIG?.strategy || STRATEGIES[0]?.name;
+  $('#btTicker').value = CONFIG?.tickers?.[0] || 'KRW-BTC';
+  $('#btInitial').value = CONFIG?.initial_krw || 1000000;
+  $('#btSL').value = CONFIG?.risk?.stop_loss_pct ?? 0; $('#btTP').value = CONFIG?.risk?.take_profit_pct ?? 0;
+  onBtStrategyChange();
+}
+function onBtStrategyChange(){ const n=$('#btStrategy').value; paramInputs($('#btParams'), n, CONFIG?.strategy_params?.[n]); }
+$('#btStrategy').onchange = onBtStrategyChange;
+
+async function submitBt(strategy, params){
+  const body = { strategy, ticker: $('#btTicker').value.trim().toUpperCase(), days: Number($('#btDays').value), params,
+    initial_krw: Number($('#btInitial').value), stop_loss_pct: Number($('#btSL').value), take_profit_pct: Number($('#btTP').value) };
+  const r = await api('/api/backtest',{method:'POST', body:JSON.stringify(body)});
+  return r.id;
+}
+async function waitJob(id){
+  for(;;){ const j = await api('/api/backtest/'+id); if (j.state!=='running') return j; await new Promise(r=>setTimeout(r,700)); }
+}
+$('#btnRunBt').onclick = async ()=>{
+  $('#btnRunBt').disabled = true; $('#btStatus').textContent = '캔들 수신 및 계산 중...';
+  try { const id = await submitBt($('#btStrategy').value, readParams($('#btParams'))); const j = await waitJob(id); loadHistory();
+    if (j.state==='error') throw new Error(j.error); showResult(j); $('#btStatus').textContent=''; }
+  catch(e){ $('#btStatus').textContent=''; toast('백테스트 실패: '+e.message, true); }
+  finally { $('#btnRunBt').disabled = false; }
+};
+$('#btnRunAll').onclick = async ()=>{
+  $('#btnRunAll').disabled = true; $('#btStatus').textContent = `${STRATEGIES.length}개 전략 실행 중...`;
+  try { const ids = []; for (const s of STRATEGIES) ids.push(await submitBt(s.name, {}));
+    await Promise.all(ids.map(waitJob)); loadHistory(); $('#btStatus').textContent='완료. 아래 기록에서 비교하세요.'; }
+  catch(e){ toast(e.message,true); } finally { $('#btnRunAll').disabled=false; }
+};
+function showResult(j){
+  const r = j.result, m = r.metrics;
+  $('#btResultCard').style.display='';
+  $('#btTitle').textContent = `${r.strategy} · ${r.ticker} · ${m.start} ~ ${m.end} · 초기 ${fmt(r.initial_krw)}원 → 최종 ${fmt(r.final_krw)}원`;
+  $('#mRet').textContent = pct(m.total_return_pct); $('#mRet').className='value '+cls(m.total_return_pct);
+  $('#mBH').textContent = pct(m.buy_hold_return_pct); $('#mBH').className='value '+cls(m.buy_hold_return_pct);
+  $('#mMDD').textContent = m.mdd_pct.toFixed(2)+'%';
+  $('#mTrades').textContent = `${m.n_trades}회 / ${m.win_rate_pct.toFixed(1)}%`;
+  $('#btTrades').innerHTML = r.trades.slice().reverse().map(t=>`<tr><td>${t.ts.slice(0,16)}</td><td class="${t.side}">${t.side==='BUY'?'매수':'매도'}</td><td>${fmt(t.price)}</td><td>${fmt(t.volume,6)}</td><td>${fmt(t.krw)}</td><td class="${cls(t.pnl_krw)}">${t.pnl_krw==null?'-':(t.pnl_krw>=0?'+':'')+fmt(t.pnl_krw)}</td><td style="text-align:left">${t.reason}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">체결 없음</td></tr>';
+  const labels = r.equity.map(e=>e.ts.slice(0,16));
+  const eq = r.equity.map(e=>e.v / r.initial_krw * 100);
+  const p0 = r.close[0]?.v || 1; const px = r.close.map(c=>c.v / p0 * 100);
+  const ds = [{label:'전략 자산', data:eq, borderColor:'#f7b32b', pointRadius:0, borderWidth:1.5, tension:.1},
+              {label:'단순 보유', data:px, borderColor:'#8b91a0', borderDash:[4,4], pointRadius:0, borderWidth:1, tension:.1}];
+  if(!btChart){ btChart = new Chart($('#btChart'), {type:'line', data:{labels, datasets:ds},
+      options:{animation:false, plugins:{legend:{labels:{color:'#8b91a0'}}}, scales:{x:{ticks:{color:'#8b91a0', maxTicksLimit:12}, grid:{color:'#262a33'}}, y:{ticks:{color:'#8b91a0', callback:v=>v.toFixed(0)+'%'}, grid:{color:'#262a33'}}}}}); }
+  else { btChart.data.labels=labels; btChart.data.datasets=ds; btChart.update(); }
+  $('#btResultCard').scrollIntoView({behavior:'smooth'});
+}
+async function loadHistory(){
+  const jobs = await api('/api/backtest');
+  $('#btHistory').innerHTML = jobs.map(j=>{ const m=j.metrics, q=j.request;
+    const params = Object.entries(q.params||{}).map(([k,v])=>`${k}=${v}`).join(' ');
+    return `<tr class="clickable" data-id="${j.id}"><td>${j.submitted.replace('T',' ').slice(5)}</td><td>${q.strategy}</td><td>${q.ticker}</td><td>${q.days}일</td><td style="text-align:left">${params||'기본'}</td>
+      <td class="${m?cls(m.total_return_pct):''}">${m?pct(m.total_return_pct):'-'}</td><td>${m?pct(m.buy_hold_return_pct):'-'}</td><td>${m?m.mdd_pct.toFixed(2)+'%':'-'}</td><td>${m?m.n_trades:'-'}</td><td>${m?m.win_rate_pct.toFixed(1)+'%':'-'}</td>
+      <td>${j.state==='running'?'실행 중':j.state==='error'?'오류: '+(j.error||''):'완료'}</td></tr>`; }).join('') || '<tr><td colspan="11" class="muted">아직 없음</td></tr>';
+  $('#btHistory').querySelectorAll('tr.clickable').forEach(tr=>tr.onclick=async()=>{ const j=await api('/api/backtest/'+tr.dataset.id); if(j.state==='done') showResult(j); else toast(j.error||'아직 실행 중', j.state==='error'); });
+}
+
+// ---------- init
+(async function init(){
+  STRATEGIES = await api('/api/strategies');
+  await loadConfig();
+  fillBtForm();
+  loadHistory();
+  api('/api/tickers').then(list=>{ $('#tickerList').innerHTML = list.map(t=>`<option value="${t}">`).join(''); }).catch(()=>{});
+  refresh(); setInterval(refresh, 5000);
+})();
+</script>
+</body>
+</html>
