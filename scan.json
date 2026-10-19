@@ -1,30 +1,31 @@
 {
-  "generatedAt": "2026-10-19T20:02:26.588Z",
+  "generatedAt": "2026-10-19T23:50:18.628Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 33,
+        "scanned": 34,
         "hits": []
       },
       "short": {
-        "scanned": 33,
+        "scanned": 34,
         "hits": [
           {
-            "sym": "KRW-XPL",
-            "name": "플라즈마",
-            "chgRate": -1.92,
-            "score": 5,
+            "sym": "KRW-HBAR",
+            "name": "헤데라",
+            "chgRate": -3.48,
+            "score": 6,
             "reasons": [
-              "거래량 급증 2.0배",
-              "역배열 (종가 < MA20 104.20원 < MA60 106.43원)",
-              "RSI 32 하락 우위"
+              "변동성 이탈선 111.50원 하향",
+              "거래량 1.7배",
+              "역배열 (종가 < MA20 112.15원 < MA60 114.15원)",
+              "RSI 40 하락 우위"
             ],
-            "price": 102,
-            "stop": 103,
-            "tgt": 101,
+            "price": 111,
+            "stop": 112,
+            "tgt": 110,
             "rr": 1
           }
         ]
