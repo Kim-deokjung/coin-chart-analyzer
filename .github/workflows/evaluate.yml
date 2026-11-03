@@ -1,0 +1,50 @@
+name: 신호 사후 평가
+
+# 지난 자동 스캔 신호들이 실제로 어떻게 됐는지(승률·기대값) 세어 eval.json 으로 남긴다.
+# 매일 한 번 돌고, Actions 탭에서 수동 실행도 된다. 조회 전용이며 주문 기능은 없다.
+on:
+  schedule:
+    - cron: "17 1 * * *"     # 매일 10:17 KST
+  workflow_dispatch:
+  push:
+    paths:                   # 평가 규칙이 바뀌면 바로 다시 센다
+      - evaluate.js
+      - .github/workflows/evaluate.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evaluate
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0         # scan.json 의 과거 커밋을 전부 읽어야 한다
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 평가 실행
+        env:
+          EVAL_HOLD: "24"        # 최대 보유 봉 수 (1시간봉 → 24시간)
+        run: node evaluate.js
+
+      - name: 결과 커밋
+        run: |
+          if git diff --quiet -- eval.json && [ -f eval.json ] && git ls-files --error-unmatch eval.json >/dev/null 2>&1; then
+            echo "변경 없음 — 커밋 생략"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add eval.json
+          git commit -m "신호 사후 평가 $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
