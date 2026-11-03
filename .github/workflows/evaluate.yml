@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "17 1 * * *"     # 매일 10:17 KST
   workflow_dispatch:
+  push:
+    paths:                   # 평가 규칙이 바뀌면 바로 다시 센다
+      - evaluate.js
+      - .github/workflows/evaluate.yml
 
 permissions:
   contents: write
