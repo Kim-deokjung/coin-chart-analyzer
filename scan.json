@@ -1,45 +1,44 @@
 {
-  "generatedAt": "2026-11-07T16:01:41.268Z",
+  "generatedAt": "2026-11-07T20:22:58.779Z",
   "tf": "m60",
   "tfLabel": "1시간",
   "note": "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
   "exchanges": {
     "upbit": {
       "long": {
-        "scanned": 36,
+        "scanned": 33,
         "hits": []
       },
       "short": {
-        "scanned": 36,
-        "hits": [
-          {
-            "sym": "KRW-ELSA",
-            "name": "헤이엘사",
-            "chgRate": -8.85,
-            "score": 7,
-            "reasons": [
-              "거래량 1.4배",
-              "24시간 -8.8% 변동",
-              "역배열 (종가 < MA20 106.95원 < MA60 111.38원)",
-              "MACD 데드크로스 (2봉 전)",
-              "RSI 40 하락 우위"
-            ],
-            "price": 103,
-            "stop": 104,
-            "tgt": 86.69999999999999,
-            "rr": 16.3
-          }
-        ]
+        "scanned": 33,
+        "hits": []
       }
     },
     "binance": {
       "long": {
-        "scanned": 25,
+        "scanned": 20,
         "hits": []
       },
       "short": {
-        "scanned": 25,
-        "hits": []
+        "scanned": 20,
+        "hits": [
+          {
+            "sym": "PEPEUSDT",
+            "name": "PEPE",
+            "chgRate": -4.15,
+            "score": 5,
+            "reasons": [
+              "변동성 이탈선 $0.000004865 하향",
+              "!거래량 0.5배 — 뒷받침이 약한 움직임",
+              "역배열 (종가 < MA20 $0.000004924 < MA60 $0.000004936)",
+              "RSI 37 하락 우위"
+            ],
+            "price": 0.00000485,
+            "stop": 0.000004932500000000001,
+            "tgt": 0.000004715,
+            "rr": 1.64
+          }
+        ]
       }
     }
   }
