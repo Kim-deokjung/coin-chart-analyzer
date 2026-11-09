@@ -11,7 +11,7 @@
    ============================================================ */
 
 const fs = require("fs");
-const { STABLE, scanScore } = require("./core.js");
+const { STABLE, scanScore, tradeStrength, upbitRisk } = require("./core.js");
 
 const TF = process.env.SCAN_TF || "m60";           // 기준 봉
 const TOP = +(process.env.SCAN_TOP || 40);         // 거래대금 상위 몇 개까지 정밀 분석할지
@@ -47,9 +47,11 @@ const EX = {
   upbit: {
     label: "업비트", minVol: 3e9, fmt: fmtKRW, gap: 130,
     async universe() {
-      const all = await getJson("https://api.upbit.com/v1/market/all?isDetails=false");
+      // isDetails=true 로 받으면 업비트가 붙인 거래유의·주의 딱지(market_event)가 같이 온다
+      const all = await getJson("https://api.upbit.com/v1/market/all?isDetails=true");
       const krw = all.filter(m => m.market.startsWith("KRW-"));
       const name = Object.fromEntries(krw.map(m => [m.market, m.korean_name]));
+      const risk = Object.fromEntries(krw.map(m => [m.market, upbitRisk(m)]));
       const out = [];
       for (let i = 0; i < krw.length; i += 100) {
         const codes = krw.slice(i, i + 100).map(m => m.market).join(",");
@@ -57,6 +59,7 @@ const EX = {
         rows.forEach(t => out.push({
           sym: t.market, name: name[t.market] || t.market, price: t.trade_price,
           chgRate: t.signed_change_rate * 100, quoteVol: t.acc_trade_price_24h,
+          risk: risk[t.market],
         }));
         await sleep(150);
       }
@@ -67,6 +70,9 @@ const EX = {
         open: c.opening_price, high: c.high_price, low: c.low_price,
         close: c.trade_price, volume: c.candle_acc_trade_volume,
       }))),
+    // 최근 체결 500건 → 체결강도. ask_bid: BID = 사는 쪽이 먼저 달려든 체결
+    ticks: sym => getJson(`https://api.upbit.com/v1/trades/ticks?market=${sym}&count=500`)
+      .then(raw => raw.map(t => ({ price: t.trade_price, volume: t.trade_volume, takerBuy: t.ask_bid === "BID", ts: t.timestamp }))),
   },
   binance: {
     label: "바이낸스", minVol: 1e7, fmt: fmtUSD, gap: 60,
@@ -100,8 +106,15 @@ const EX = {
       const raw = await getJson(`${h}/api/v3/klines?symbol=${sym}&interval=${TFS[TF].binance}&limit=120`);
       return raw.map(k => ({ open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
     },
+    // aggTrades 는 trades 보다 요청 비용이 싸다. m(isBuyerMaker)=true 면 파는 쪽이 먼저 달려든 체결
+    async ticks(sym) {
+      const h = await this.pick();
+      const raw = await getJson(`${h}/api/v3/aggTrades?symbol=${sym}&limit=1000`);
+      return raw.map(t => ({ price: +t.p, volume: +t.q, takerBuy: !t.m, ts: t.T }));
+    },
   },
 };
+
 
 // 캔들은 종목당 한 번만 받고 상방·하방을 같이 판정한다 (요청 수 절반)
 async function scanExchange(key) {
@@ -115,11 +128,16 @@ async function scanExchange(key) {
   for (const u of uni) {
     try {
       const cs = await ex.candles(u.sym);
+      // 체결강도는 실패해도 스캔을 막지 않는다 — 없으면 "미조회"로 표시될 뿐
+      try { await sleep(ex.gap); u.strength = tradeStrength(await ex.ticks(u.sym), 30); }
+      catch (e) { u.strength = null; }
       for (const dir of ["long", "short"]) {
         const s = scanScore(cs, dir, u, ex.fmt);
         if (s) res[dir].hits.push({
           sym: u.sym, name: u.name, chgRate: +u.chgRate.toFixed(2),
-          score: s.score, reasons: s.reasons,
+          score: s.score, dims: s.dims, reasons: s.reasons,
+          strength: s.strength == null ? null : +s.strength.toFixed(0),
+          risk: u.risk || null,
           price: s.price, stop: s.stop, tgt: s.tgt, rr: +s.rr.toFixed(2),
         });
       }
@@ -139,7 +157,7 @@ async function scanExchange(key) {
   const out = {
     generatedAt: new Date().toISOString(),
     tf: TF, tfLabel: TFS[TF].label,
-    note: "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 동시에 성립한 조건의 수입니다.",
+    note: "조건 검색 결과이며 매매 추천이 아닙니다. 점수는 움직임·자금흐름·위험 차원 점수의 합이며, 파생·관심 차원은 아직 빈칸입니다.",
     exchanges: {},
   };
   for (const key of ["upbit", "binance"]) {
